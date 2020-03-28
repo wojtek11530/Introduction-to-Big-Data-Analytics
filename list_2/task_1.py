@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 
 def run():
-    # single_run()
+    #single_run()
     comparision_for_different_size()
 
 
@@ -14,8 +14,8 @@ def single_run():
     min_value = 3
     max_value = 7
 
-    n_rows = 1000
-    n_cols = 1000
+    n_rows = 10000
+    n_cols = 100
     matrix = get_matrix(n_rows, n_cols)
     beginning_time = time.time()
     result = counting_elements(matrix, min_value, max_value)
@@ -36,19 +36,18 @@ def comparision_for_different_size():
     min_value = 3
     max_value = 7
 
-    exponents_1 = np.arange(1, 5)
-    exponents_2 = np.arange(1, 4)
+    n_cols = 100
 
-    sizes_1 = np.power([10] * len(exponents_1), exponents_1)
-    sizes_2 = 5 * np.power([10] * len(exponents_2), exponents_2)
-    sizes_3 = 2 * np.power([10] , 4)
-    sizes = np.sort(np.hstack((sizes_1, sizes_2, sizes_3)))
+    exponents = np.arange(1, 7)
+
+    sizes_1 = np.power([10] * len(exponents), exponents)
+    sizes_2 = 5 * np.power([10] * len(exponents[:-1]), exponents[:-1])
+    sizes = np.sort(np.hstack((sizes_1, sizes_2)))
 
     serialized_times = []
     parallel_times = []
     for n in sizes:
         n_rows = n
-        n_cols = n_rows
         matrix = get_matrix(n_rows, n_cols)
 
         beginning_time = time.time()
@@ -63,8 +62,8 @@ def comparision_for_different_size():
 
     plt.plot(sizes, serialized_times, 'o-', label='Serialized')
     plt.plot(sizes, parallel_times, 'o-', label='Parallel')
-    plt.title('Running time for different matrix size')
-    plt.xlabel('Matrix size')
+    plt.title('Running time for different matrix size, columns number=' + str(n_cols))
+    plt.xlabel('Chunks number (rows number)')
     plt.ylabel('Time [s]')
     plt.xscale('log')
     plt.legend()
@@ -78,26 +77,29 @@ def get_matrix(rows_number, columns_number):
     return matrix
 
 
-def counting(list, min_value, max_value):
+def counting_mapper(list, min_value, max_value):
     count = 0
     for element in list:
         if min_value <= element and element <= max_value:
             count += 1
     return count
 
+def reduce(mapped_counts_list):
+    return sum(mapped_counts_list)
+
 
 def counting_elements(matrix, min_value, max_value):
     results = []
     for list in matrix:
-        results.append(counting(list, min_value, max_value))
-    result = sum(results)
+        results.append(counting_mapper(list, min_value, max_value))
+    result = reduce(results)
     return result
 
 
 def counting_elements_multiprocessing(matrix, min_value, max_value):
-    pool = mp.Pool(mp.cpu_count())
-    results = pool.starmap(counting, [(list, min_value, max_value) for list in matrix])
-    result = sum(results)
+    pool = mp.Pool(mp.cpu_count()-1)
+    results = pool.starmap(counting_mapper, [(list, min_value, max_value) for list in matrix])
+    result = reduce(results)
     return result
 
 
