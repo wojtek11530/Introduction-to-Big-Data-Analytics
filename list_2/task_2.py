@@ -1,10 +1,12 @@
 import time
 
+import numpy as np
 import multiprocessing as mp
-import requests, bs4, os, errno, zipfile, glob
+import requests, bs4, os, zipfile, glob
 from urllib.request import urlretrieve
 from nltk.corpus import stopwords
 from nltk.tokenize import RegexpTokenizer
+import matplotlib.pyplot as plt
 
 # import nltk
 # nltk.download('stopwords')
@@ -17,27 +19,59 @@ STOPWORDS = stopwords.words('english')
 def run():
     # get_urls_to_zip_files()
     # get_books_from_urls_to_zip_files()
+    #comparision_for_different_books_number()
+    single_run()
 
-    books_number = 150
+
+def single_run():
+    books_number = 160
     top_counts = 20
     lines = read_book_lines(books_number)
-
     beginning_time = time.time()
     word_counts = count_words_serialized_manner(lines)
     elapsed_time_serial_processing = time.time() - beginning_time
 
+    print('Books number: ' + str(books_number))
     print('SERIAL PROCESSING')
     print('Elapsed time: ' + str(elapsed_time_serial_processing) + ' s\n')
     print_sorted_counts(word_counts, top=top_counts)
-
     beginning_time = time.time()
     word_counts = count_words_parallel_manner(lines)
     elapsed_time_parallel_processing = time.time() - beginning_time
-
     print('\n' + '#' * 25 + '\n')
     print('PARALLEL PROCESSING')
     print('Elapsed time: ' + str(elapsed_time_parallel_processing) + ' s\n')
     print_sorted_counts(word_counts, top=top_counts)
+
+
+def comparision_for_different_books_number():
+    books_number = np.arange(10, 160, 10)
+
+    lines_number = []
+    serialized_times = []
+    parallel_times = []
+    for n in books_number:
+        lines = read_book_lines(n)
+        lines_number.append(len(lines))
+
+        beginning_time = time.time()
+        word_counts = count_words_serialized_manner(lines)
+        elapsed_time_serial_processing = time.time() - beginning_time
+        serialized_times.append(elapsed_time_serial_processing)
+
+        beginning_time = time.time()
+        word_counts = count_words_parallel_manner(lines)
+        elapsed_time_parallel_processing = time.time() - beginning_time
+        parallel_times.append(elapsed_time_parallel_processing)
+
+    plt.plot(lines_number, serialized_times, 'o-', label='Serialized')
+    plt.plot(lines_number, parallel_times, 'o-', label='Parallel')
+    plt.title('Running time for different lines number')
+    plt.xlabel('Chunks number (lines number)')
+    plt.ylabel('Time [s]')
+    plt.legend()
+    plt.grid()
+    plt.show()
 
 
 def count_words_serialized_manner(lines):
@@ -82,12 +116,20 @@ def print_sorted_counts(word_counts, top=10):
     word_counts_sorted = {k: v for k, v in sorted(word_counts.items(), key=lambda item: item[1], reverse=True)}
 
     i = 1
+    words = []
+    counts = []
     print('Top ' + str(top) + ' counts')
     for k, v in word_counts_sorted.items():
         print(str(i) + '.' + k + ': ' + str(v))
+        words.append(k)
+        counts.append(v)
         i += 1
         if i > 20:
             break
+
+    plt.bar(words, counts)
+    plt.ylabel('count')
+    plt.show()
 
 
 def read_book_lines(books_number=150):

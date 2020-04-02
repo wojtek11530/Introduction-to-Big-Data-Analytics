@@ -1,26 +1,57 @@
 import time
 import multiprocessing as mp
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 def run():
-    digits_number = 2000
+    single_run()
+    #comparision_for_different_digitss_number()
 
+
+def single_run():
+    digits_number = 30
     beginning_time = time.time()
     pi_string = determine_pi_digits_serial_manner(digits_number)
     elapsed_time_serial_processing = time.time() - beginning_time
 
+    print('Digits number: ' + str(digits_number))
     print('SERIAL PROCESSING')
     print('Elapsed time: ' + str(elapsed_time_serial_processing) + ' s\n')
     print(pi_string)
-
     beginning_time = time.time()
     pi_string = determine_pi_digits_parallel_manner(digits_number)
     elapsed_time_parallel_processing = time.time() - beginning_time
-
     print('\n' + '#' * 25 + '\n')
     print('PARALLEL PROCESSING')
     print('Elapsed time: ' + str(elapsed_time_parallel_processing) + ' s\n')
     print(pi_string)
+
+
+def comparision_for_different_digitss_number():
+    digits_number = np.arange(100, 2500, 100)
+
+    serialized_times = []
+    parallel_times = []
+    for n in digits_number:
+        beginning_time = time.time()
+        pi_string = determine_pi_digits_serial_manner(n)
+        elapsed_time_serial_processing = time.time() - beginning_time
+        serialized_times.append(elapsed_time_serial_processing)
+
+        beginning_time = time.time()
+        pi_string = determine_pi_digits_parallel_manner(n)
+        elapsed_time_parallel_processing = time.time() - beginning_time
+        parallel_times.append(elapsed_time_parallel_processing)
+
+    plt.plot(digits_number, serialized_times, 'o-', label='Serialized')
+    plt.plot(digits_number, parallel_times, 'o-', label='Parallel')
+    plt.title(r'Running time for different digits number of $\pi$')
+    plt.xlabel('Chunks number (digits number)')
+    plt.ylabel('Time [s]')
+    plt.legend()
+    plt.grid()
+    plt.show()
 
 
 def determine_pi_digits_serial_manner(digits_number):

@@ -1,32 +1,71 @@
 import numpy as np
 import multiprocessing as mp
+import matplotlib.pyplot as plt
 import operator
 import time
 
+
 def run():
-    m = 100
-    n = 1000
-    p = 75
+    m = 5
+    n = 10
+    p = 6
     M = np.random.rand(m, n)
     N = np.random.rand(n, p)
+
+    print("Matrix M: m by n")
+    print("Matrix N: n by p")
+    print("m = " + str(m))
+    print("n = " + str(n))
+    print("p = " + str(p))
+
 
     beginning_time = time.time()
     P_result = calculate_product_serial_manner(M, N)
     elapsed_time_serial_processing = time.time() - beginning_time
-
-    print('SERIAL PROCESSING')
+    print('\nSERIAL PROCESSING')
     print('Elapsed time: ' + str(elapsed_time_serial_processing) + ' s\n')
-    #print(P_result)
-
+    print(P_result)
     beginning_time = time.time()
     P_result = calculate_product_parallel_manner(M, N)
     elapsed_time_parallel_processing = time.time() - beginning_time
-
     print('\n' + '#' * 25 + '\n')
     print('PARALLEL PROCESSING')
     print('Elapsed time: ' + str(elapsed_time_parallel_processing) + ' s\n')
-    #print(P_result)
+    print(P_result)
 
+
+
+def comparision_for_different_matrix_sizes():
+
+    m = 100
+    n_list = np.arange(100, 1600, 200)
+    p = 120
+
+    serialized_times = []
+    parallel_times = []
+    for n in n_list:
+        M = np.random.rand(m, n)
+        N = np.random.rand(n, p)
+
+        beginning_time = time.time()
+        P_result = calculate_product_serial_manner(M, N)
+        elapsed_time_serial_processing = time.time() - beginning_time
+        serialized_times.append(elapsed_time_serial_processing)
+
+        beginning_time = time.time()
+        P_result = calculate_product_parallel_manner(M, N)
+        elapsed_time_parallel_processing = time.time() - beginning_time
+        parallel_times.append(elapsed_time_parallel_processing)
+
+    plt.plot(n_list, serialized_times, 'o-', label='Serialized')
+    plt.plot(n_list, parallel_times, 'o-', label='Parallel')
+    plt.title(
+        r'Running time of $M_{m\times n} \cdot N_{n \times p}$ for different $n$; $m=$' + str(m) + ', $p=$' + str(p))
+    plt.xlabel(r'Chunks number ($n$ dimension)')
+    plt.ylabel('Time [s]')
+    plt.legend()
+    plt.grid()
+    plt.show()
 
 
 def calculate_product_serial_manner(M, N):
@@ -42,6 +81,7 @@ def calculate_product_serial_manner(M, N):
             result = map_function_N('N', (j, k), N[j][k], M.shape[0])
             map_result_N.append(result)
 
+    # flatening lists:
     map_result_M = [item for sublist in map_result_M for item in sublist]
     map_result_N = [item for sublist in map_result_N for item in sublist]
 
@@ -101,7 +141,7 @@ def reduce_function(m, p, map_result_M, map_result_N):
             vector_M = np.array([value for _, _, value in M_assosiative_lists[(i, k)]])
             vector_N = np.array([value for _, _, value in N_assosiative_lists[(i, k)]])
             P[i][k] = vector_M.dot(vector_N)
-            pass
+
     return (P)
 
 

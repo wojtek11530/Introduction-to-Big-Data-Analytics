@@ -6,37 +6,42 @@ import matplotlib.pyplot as plt
 
 
 def run():
-    #single_run()
-    comparision_for_different_size()
+    single_run()
+    #comparision_for_different_size()
 
 
 def single_run():
     min_value = 3
     max_value = 7
 
-    n_rows = 10000
-    n_cols = 100
+    n_rows = 100000
+    n_cols = 250
+    print("n_rows = " + str(n_rows))
+    print("n_cols = " + str(n_cols))
+    print("min_value = " + str(min_value))
+    print("max_value = " + str(max_value))
+
     matrix = get_matrix(n_rows, n_cols)
     beginning_time = time.time()
     result = counting_elements(matrix, min_value, max_value)
-    elapsed_time = time.time() - beginning_time
-    print('Serialized')
+    elapsed_time_serial_processing = time.time() - beginning_time
+    print('\nSerialized')
     print('Result: ' + str(result))
-    print('Elapsed time: ' + str(elapsed_time) + ' s')
+    print('Elapsed time: ' + str(elapsed_time_serial_processing) + ' s')
 
     beginning_time = time.time()
     result = counting_elements_multiprocessing(matrix, min_value, max_value)
-    elapsed_time = time.time() - beginning_time
+    elapsed_time_parallel_processing = time.time() - beginning_time
     print('\nParallel (multiprocessing)')
     print('Result: ' + str(result))
-    print('Elapsed time: ' + str(elapsed_time) + ' s')
+    print('Elapsed time: ' + str(elapsed_time_parallel_processing) + ' s')
 
 
 def comparision_for_different_size():
     min_value = 3
     max_value = 7
 
-    n_cols = 100
+    n_cols = 250
 
     exponents = np.arange(1, 7)
 
@@ -62,7 +67,7 @@ def comparision_for_different_size():
 
     plt.plot(sizes, serialized_times, 'o-', label='Serialized')
     plt.plot(sizes, parallel_times, 'o-', label='Parallel')
-    plt.title('Running time for different matrix size, columns number=' + str(n_cols))
+    plt.title('Running time for different matrix sizes, columns number=' + str(n_cols))
     plt.xlabel('Chunks number (rows number)')
     plt.ylabel('Time [s]')
     plt.xscale('log')
