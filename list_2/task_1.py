@@ -11,26 +11,33 @@ def run():
 
 
 def single_run():
-    min_value = 3
-    max_value = 7
+    min_value_1 = 3
+    max_value_1 = 5
 
-    n_rows = 100000
+    min_value_2 = 7
+    max_value_2 = 9
+
+    min_max_list = [(min_value_1, max_value_1), (min_value_2, max_value_2)]
+
+    n_rows = 1000
     n_cols = 250
     print("n_rows = " + str(n_rows))
     print("n_cols = " + str(n_cols))
-    print("min_value = " + str(min_value))
-    print("max_value = " + str(max_value))
+    i = 1
+    for min, max in min_max_list:
+        print(str(i) + ".min_value = " + str(min))
+        print(str(i) + ".max_value = " + str(max))
 
     matrix = get_matrix(n_rows, n_cols)
     beginning_time = time.time()
-    result = counting_elements(matrix, min_value, max_value)
+    result = counting_elements(matrix, min_max_list)
     elapsed_time_serial_processing = time.time() - beginning_time
     print('\nSerialized')
     print('Result: ' + str(result))
     print('Elapsed time: ' + str(elapsed_time_serial_processing) + ' s')
 
     beginning_time = time.time()
-    result = counting_elements_multiprocessing(matrix, min_value, max_value)
+    result = counting_elements_multiprocessing(matrix, min_max_list)
     elapsed_time_parallel_processing = time.time() - beginning_time
     print('\nParallel (multiprocessing)')
     print('Result: ' + str(result))
@@ -56,12 +63,12 @@ def comparision_for_different_size():
         matrix = get_matrix(n_rows, n_cols)
 
         beginning_time = time.time()
-        counting_elements(matrix, min_value, max_value)
+        counting_elements(matrix, [(min_value, max_value)])
         elapsed_time = time.time() - beginning_time
         serialized_times.append(elapsed_time)
 
         beginning_time = time.time()
-        counting_elements_multiprocessing(matrix, min_value, max_value)
+        counting_elements_multiprocessing(matrix,[(min_value, max_value)])
         elapsed_time = time.time() - beginning_time
         parallel_times.append(elapsed_time)
 
@@ -82,28 +89,29 @@ def get_matrix(rows_number, columns_number):
     return matrix
 
 
-def counting_mapper(list, min_value, max_value):
+def counting_mapper(list, min_max_pairs):
     count = 0
     for element in list:
-        if min_value <= element and element <= max_value:
-            count += 1
+        for min_value, max_value in min_max_pairs:
+            if min_value <= element and element <= max_value:
+                count += 1
     return count
 
 def reduce(mapped_counts_list):
     return sum(mapped_counts_list)
 
 
-def counting_elements(matrix, min_value, max_value):
+def counting_elements(matrix, pairs_list):
     results = []
     for list in matrix:
-        results.append(counting_mapper(list, min_value, max_value))
+        results.append(counting_mapper(list, pairs_list))
     result = reduce(results)
     return result
 
 
-def counting_elements_multiprocessing(matrix, min_value, max_value):
+def counting_elements_multiprocessing(matrix, pairs_list):
     pool = mp.Pool(mp.cpu_count()-1)
-    results = pool.starmap(counting_mapper, [(list, min_value, max_value) for list in matrix])
+    results = pool.starmap(counting_mapper, [(list, pairs_list) for list in matrix])
     result = reduce(results)
     return result
 
