@@ -6,21 +6,23 @@ import matplotlib.pyplot as plt
 
 def run():
     single_run()
-    #comparision_for_different_digitss_number()
+    # comparision_for_different_digitss_number()
 
 
 def single_run():
+    position = 10
     digits_number = 30
     beginning_time = time.time()
-    pi_string = determine_pi_digits_serial_manner(digits_number)
+    pi_string = determine_pi_digits_from_position_serial_manner(digits_number, position)
     elapsed_time_serial_processing = time.time() - beginning_time
 
     print('Digits number: ' + str(digits_number))
+    print('From position: ' + str(position))
     print('SERIAL PROCESSING')
     print('Elapsed time: ' + str(elapsed_time_serial_processing) + ' s\n')
     print(pi_string)
     beginning_time = time.time()
-    pi_string = determine_pi_digits_parallel_manner(digits_number)
+    pi_string = determine_pi_digits_from_position_parallel_manner(digits_number, position)
     elapsed_time_parallel_processing = time.time() - beginning_time
     print('\n' + '#' * 25 + '\n')
     print('PARALLEL PROCESSING')
@@ -35,12 +37,12 @@ def comparision_for_different_digitss_number():
     parallel_times = []
     for n in digits_number:
         beginning_time = time.time()
-        pi_string = determine_pi_digits_serial_manner(n)
+        pi_string = determine_pi_digits_from_position_serial_manner(n)
         elapsed_time_serial_processing = time.time() - beginning_time
         serialized_times.append(elapsed_time_serial_processing)
 
         beginning_time = time.time()
-        pi_string = determine_pi_digits_parallel_manner(n)
+        pi_string = determine_pi_digits_from_position_parallel_manner(n)
         elapsed_time_parallel_processing = time.time() - beginning_time
         parallel_times.append(elapsed_time_parallel_processing)
 
@@ -54,18 +56,18 @@ def comparision_for_different_digitss_number():
     plt.show()
 
 
-def determine_pi_digits_serial_manner(digits_number):
+def determine_pi_digits_from_position_serial_manner(digits_number, position=0):
     digits = []
     for d in range(digits_number):
-        digits.append(dth_digit(d))
-    pi_string = pi_reduce(digits)
+        digits.append(dth_digit(position + d))
+    pi_string = pi_reduce(digits, position)
     return pi_string
 
 
-def determine_pi_digits_parallel_manner(digits_number):
+def determine_pi_digits_from_position_parallel_manner(digits_number, position=0):
     pool = mp.Pool(mp.cpu_count() - 1)
-    digits = pool.map(dth_digit, [d for d in range(digits_number)])
-    pi_string = pi_reduce(digits)
+    digits = pool.map(dth_digit, [position + d for d in range(digits_number)])
+    pi_string = pi_reduce(digits, position)
     return pi_string
 
 
@@ -76,8 +78,10 @@ def dth_digit(d):
     return '{:x}'.format(int(x * 16))
 
 
-def pi_reduce(digits):
-    pi_string = digits[0] + '.'
+def pi_reduce(digits, position):
+    pi_string = digits[0]
+    if position == 0:
+        pi_string += '.'
     for i in range(1, len(digits)):
         pi_string += digits[i]
     return pi_string
