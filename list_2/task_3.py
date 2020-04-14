@@ -10,7 +10,7 @@ def run():
 
 
 def single_run():
-    position = 10
+    position = 0
     digits_number = 30
     beginning_time = time.time()
     pi_string = determine_pi_digits_from_position_serial_manner(digits_number, position)
@@ -56,57 +56,55 @@ def comparision_for_different_digitss_number():
     plt.show()
 
 
-def determine_pi_digits_from_position_serial_manner(digits_number, position=0):
+def determine_pi_digits_from_position_serial_manner(digits_number, beg_position=0):
     digits = []
     for d in range(digits_number):
-        digits.append(dth_digit(position + d))
-    pi_string = pi_reduce(digits, position)
+        digits.append(dth_digit_of_pi(beg_position + d))
+    pi_string = pi_reduce(digits, beg_position)
     return pi_string
 
 
 def determine_pi_digits_from_position_parallel_manner(digits_number, position=0):
     pool = mp.Pool(mp.cpu_count() - 1)
-    digits = pool.map(dth_digit, [position + d for d in range(digits_number)])
+    digits = pool.map(dth_digit_of_pi, [position + d for d in range(digits_number)])
     pi_string = pi_reduce(digits, position)
     return pi_string
 
 
-def dth_digit(d):
+def dth_digit_of_pi(d):
     # map function
     d -= 1
-    x = (4 * S(1, d) - 2 * S(4, d) - S(5, d) - S(6, d)) % 1.0
-    return '{:x}'.format(int(x * 16))
+    digit = (4 * S(1, d) - 2 * S(4, d) - S(5, d) - S(6, d)) % 1.0
+    return d+1, '{:x}'.format(int(digit * 16))
 
 
 def pi_reduce(digits, position):
-    pi_string = digits[0]
+    digits = sorted(digits, key=lambda x: x[0])
+    pi_string = digits[0][1]
     if position == 0:
         pi_string += '.'
     for i in range(1, len(digits)):
-        pi_string += digits[i]
+        pi_string += digits[i][1]
     return pi_string
 
 
-def S(j, n):
-    # Left sum
-    s = 0.0
+def S(j, d):
+    left_sum = 0.0
     k = 0
-    while k <= n:
-        r = 8 * k + j
-        s = (s + pow(16, n - k, r) / r) % 1.0
+    while k <= d:
+        left_sum = (left_sum + ((16 ** (d - k)) % (8 * k + j)) / (8 * k + j)) % 1.0
         k += 1
-    # Right sum
-    t = 0.0
-    k = n + 1
-    while 1:
-        newt = t + pow(16, n - k) / (8 * k + j)
-        # Iterate until t no longer changes
-        if t == newt:
+
+    right_sum = 0.0
+    k = d + 1
+    while True:
+        new_right_sum = right_sum + 16 ** (d - k) / (8 * k + j)
+        if right_sum == new_right_sum:
             break
         else:
-            t = newt
+            right_sum = new_right_sum
         k += 1
-    return s + t
+    return (left_sum + right_sum) % 1
 
 
 if __name__ == '__main__':

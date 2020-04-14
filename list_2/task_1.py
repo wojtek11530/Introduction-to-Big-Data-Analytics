@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 def run():
     single_run()
-    #comparision_for_different_size()
+    # comparision_for_different_size()
 
 
 def single_run():
@@ -69,7 +69,7 @@ def comparision_for_different_size():
         serialized_times.append(elapsed_time)
 
         beginning_time = time.time()
-        counting_elements_multiprocessing(matrix,[(min_value, max_value)])
+        counting_elements_multiprocessing(matrix, [(min_value, max_value)])
         elapsed_time = time.time() - beginning_time
         parallel_times.append(elapsed_time)
 
@@ -117,7 +117,7 @@ def counting_elements(matrix, min_max_pairs):
 
 
 def counting_elements_multiprocessing(matrix, min_max_pairs):
-    pool = mp.Pool(mp.cpu_count()-1)
+    pool = mp.Pool(mp.cpu_count() - 1)
     results = pool.starmap(counting_mapper, [(list, min_max_pairs) for list in matrix])
     result = reduce(reducer, results)
     return result
