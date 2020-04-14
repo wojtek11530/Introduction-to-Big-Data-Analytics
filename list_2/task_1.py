@@ -1,6 +1,7 @@
 import numpy as np
 import time
 import multiprocessing as mp
+from functools import reduce
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -90,29 +91,35 @@ def get_matrix(rows_number, columns_number):
 
 
 def counting_mapper(list, min_max_pairs):
-    count = 0
+    count_dict = {}
+    for min_value, max_value in min_max_pairs:
+        count_dict[(min_value, max_value)] = 0
     for element in list:
         for min_value, max_value in min_max_pairs:
-            if min_value <= element and element <= max_value:
-                count += 1
-    return count
-
-def reduce(mapped_counts_list):
-    return sum(mapped_counts_list)
+            if min_value <= element <= max_value:
+                count_dict[(min_value, max_value)] += 1
+    return count_dict
 
 
-def counting_elements(matrix, pairs_list):
+def reducer(count_dict_A, count_dict_B):
+    for key in count_dict_A.keys():
+        count_dict_A[key] += count_dict_B[key]
+
+    return count_dict_A
+
+
+def counting_elements(matrix, min_max_pairs):
     results = []
     for list in matrix:
-        results.append(counting_mapper(list, pairs_list))
-    result = reduce(results)
+        results.append(counting_mapper(list, min_max_pairs))
+    result = reduce(reducer, results)
     return result
 
 
-def counting_elements_multiprocessing(matrix, pairs_list):
+def counting_elements_multiprocessing(matrix, min_max_pairs):
     pool = mp.Pool(mp.cpu_count()-1)
-    results = pool.starmap(counting_mapper, [(list, pairs_list) for list in matrix])
-    result = reduce(results)
+    results = pool.starmap(counting_mapper, [(list, min_max_pairs) for list in matrix])
+    result = reduce(reducer, results)
     return result
 
 
