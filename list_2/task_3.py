@@ -71,11 +71,7 @@ def determine_pi_digits_from_position_parallel_manner(digits_number, position=0)
     return pi_string
 
 
-def dth_digit_of_pi(d):
-    # map function
-    d -= 1
-    digit = (4 * S(1, d) - 2 * S(4, d) - S(5, d) - S(6, d)) % 1.0
-    return d+1, '{:x}'.format(int(digit * 16))
+
 
 
 def pi_reduce(digits, position):
@@ -86,6 +82,13 @@ def pi_reduce(digits, position):
     for i in range(1, len(digits)):
         pi_string += digits[i][1]
     return pi_string
+
+
+def dth_digit_of_pi(d):
+    # map function
+    d -= 1
+    digit = (4 * S(1, d) - 2 * S(4, d) - S(5, d) - S(6, d)) % 1.0
+    return d+1, '{:x}'.format(int(digit * 16))
 
 
 def S(j, d):
