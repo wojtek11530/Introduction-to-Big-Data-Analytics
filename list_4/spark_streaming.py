@@ -2,23 +2,37 @@
 from collections import namedtuple
 import time
 import re
+import string
 
-import matplotlib.pyplot as plt
-import seaborn as sns
+
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+
 
 import findspark
-
 findspark.init()
 from pyspark import SparkContext
 from pyspark.streaming import StreamingContext
 from pyspark.sql import SQLContext
-from pyspark.sql.functions import desc
+
 
 import pandas as pd
 
 
 def clean_tweet(tweet):
     return ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ", str(tweet)).split())
+
+
+def analyze_sentiment_polarity(tweet):
+    analyzer = SentimentIntensityAnalyzer()
+    sentiment = analyzer.polarity_scores(tweet)
+    if sentiment['compound'] >= 0.05:
+        return "Positive"
+    elif sentiment['compound'] <= - 0.05:
+        return "Negative"
+    else:
+        return "Neutral"
 
 
 def run():
@@ -37,16 +51,41 @@ def run():
     port = 5599
 
     lines = ssc.socketTextStream(host, port)
-    hashtags = lines.flatMap(lambda text: text.split(" ")).filter(lambda text: text.lower().startswith('#'))
 
+    hashtags = lines.filter(lambda text: len(text) > 0) \
+        .flatMap(lambda text: text.split(" ")) \
+        .filter(lambda text: text.lower().startswith('#'))
+
+    Word = namedtuple('Word', ("word", "count"))
     Hashtag = namedtuple('Hashtag', ("tag", "count"))
-    Tweet = namedtuple('Tweet', 'text')
+    Tweet = namedtuple('Tweet', ('text', 'sentiment'))
 
-    lines.window(40).map(lambda p: Tweet(clean_tweet(p))).foreachRDD(
-        lambda rdd: rdd.toDF().registerTempTable("tweets"))
+    stop_words = set(stopwords.words('english'))
+    list_punct = list(string.punctuation)
+    lemmatizer = WordNetLemmatizer()
+
+    lines.window(40) \
+        .map(lambda p: clean_tweet(p)) \
+        .filter(lambda text: len(text) > 0) \
+        .map(lambda p: Tweet(p, analyze_sentiment_polarity(p))) \
+        .foreachRDD(lambda rdd: rdd.toDF().registerTempTable("tweets"))
+
+    lines.window(40) \
+        .map(lambda p: clean_tweet(p)) \
+        .filter(lambda text: len(text) > 0) \
+        .flatMap(lambda text: text.split(" ")) \
+        .map(lambda word: word.lower()) \
+        .filter(lambda word: word not in stop_words) \
+        .map(lambda word: ''.join(char for char in word if char not in list_punct)) \
+        .map(lambda word: lemmatizer.lemmatize(word)) \
+        .map(lambda word: (word, 1)) \
+        .reduceByKey(lambda a, b: a + b) \
+        .map(lambda p: Word(p[0], p[1])) \
+        .foreachRDD(lambda rdd: rdd.toDF().registerTempTable("words"))
 
     hashtags.window(40) \
-        .map(lambda word: (word, 1)) \
+        .map(lambda word: ''.join(char for char in word if char not in list_punct)) \
+        .map(lambda word: (word.lower(), 1)) \
         .reduceByKey(lambda a, b: a + b) \
         .map(lambda p: Hashtag(p[0], p[1])) \
         .foreachRDD(lambda rdd: rdd.toDF().registerTempTable("hashtags"))
@@ -58,29 +97,35 @@ def run():
     time.sleep(time_to_wait)
     print("Tweets Collected....")
 
-    top_10_from_all = None
+    all_hashtags_df = None
     all_tweets_df = None
+    all_words_df = None
 
     count = 1
-    count_max = 1
+    count_max = 4
     while count <= count_max:
         print('Count: ' + str(count) + "/" + str(count_max))
         print("Waiting for 30 Seconds.....")
-        time.sleep(30)  # This loop will run every 30 seconds. The time interval can be increased as per your wish
+        time.sleep(40)  # This loop will run every 30 seconds. The time interval can be increased as per your wish
 
-        top_10_tags = sqlContext.sql('Select tag, count from hashtags')
-        top_10_df = top_10_tags.toPandas()
-        print(top_10_df)
-
-        if top_10_from_all is None:
-            top_10_from_all = top_10_df
+        words = sqlContext.sql('Select word, count from words')
+        words_df = words.toPandas()
+        print(words_df)
+        if all_words_df is None:
+            all_words_df = words_df
         else:
-            top_10_from_all = pd.concat([top_10_from_all, top_10_df], join='inner', ignore_index=True)
+            all_words_df = pd.concat([all_words_df, words_df], join='inner', ignore_index=True)
 
-        tweets = sqlContext.sql('Select text from tweets')
+        tags = sqlContext.sql('Select tag, count from hashtags')
+        tags_df = tags.toPandas()
+        print(tags_df)
+        if all_hashtags_df is None:
+            all_hashtags_df = tags_df
+        else:
+            all_hashtags_df = pd.concat([all_hashtags_df, tags_df], join='inner', ignore_index=True)
+
+        tweets = sqlContext.sql('Select text, sentiment from tweets')
         tweets_df = tweets.toPandas()
-        print(tweets_df)
-
         if all_tweets_df is None:
             all_tweets_df = tweets_df
         else:
@@ -90,18 +135,14 @@ def run():
 
     ssc.stop()
 
-    print('#' * 25)
-    print('Grouped\n')
-    grouped = top_10_from_all.groupby('tag').sum().reset_index()
-    grouped_sorted_df = grouped.sort_values('count', ascending=False)
-    print(grouped_sorted_df)
-
-    if top_10_from_all is not None:
-        top_10_from_all.to_csv('hashtags.csv')
+    if all_hashtags_df is not None:
+        all_hashtags_df.to_csv('hashtags.csv')
+    if all_words_df is not None:
+        all_words_df.to_csv('words.csv')
     if all_tweets_df is not None:
         all_tweets_df.to_csv('tweets.csv')
 
-    # ssc.stop(stopSparkContext=True, stopGraceFully=True)
+
 
 
 if __name__ == '__main__':
