@@ -17,14 +17,12 @@ access_token_secret = 'odHtc2JZaJn2jpWqma39klDkAXCd6kRHLRjNQS84H8MPi'
 class TweetsListener(StreamListener):
 
     def __init__(self, client_socket):
-        super().__init__()
         self.client_socket = client_socket
 
     def on_data(self, data):
 
         # receives data from tweets stream and
         # send process them to client socket
-
         try:
             message = json.loads(data)
             print(message['text'].encode('utf-8'))
@@ -39,7 +37,6 @@ class TweetsListener(StreamListener):
         return True
 
 
-
 def send_tweets(c_socket):
     auth = OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
@@ -47,13 +44,13 @@ def send_tweets(c_socket):
     # creating stream object with new object as a listener
     twitter_stream = Stream(auth, TweetsListener(c_socket))
     # start a stream
-    twitter_stream.filter(track=['stream'])
+    twitter_stream.filter(languages=["en"], track=['coronavirus'])
 
 
 if __name__ == "__main__":
     new_socket = socket.socket()
-    host = "192.168.56.1"  # (wpisać ipconfig w cmd)
-    port = 5055
+    host = "localhost"
+    port = 5599
     new_socket.bind((host, port))
     print("Now listening on port: %s" % str(port))
 
