@@ -4,23 +4,23 @@ import time
 import re
 import string
 
-
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-
 import findspark
+
 findspark.init()
 from pyspark import SparkContext
 from pyspark.streaming import StreamingContext
 from pyspark.sql import SQLContext
 
-
 import pandas as pd
 
 
+
 def clean_tweet(tweet):
+    # source: https://github.com/nilabja9/pyspark-twitter
     return ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ", str(tweet)).split())
 
 
@@ -64,12 +64,14 @@ def run():
     list_punct = list(string.punctuation)
     lemmatizer = WordNetLemmatizer()
 
+    # processing to obtain data about tweets text and sentiment
     lines.window(40) \
         .map(lambda p: clean_tweet(p)) \
         .filter(lambda text: len(text) > 0) \
         .map(lambda p: Tweet(p, analyze_sentiment_polarity(p))) \
         .foreachRDD(lambda rdd: rdd.toDF().registerTempTable("tweets"))
 
+    # processing to obtain data about single words in text and their count. NLP tools applied.
     lines.window(40) \
         .map(lambda p: clean_tweet(p)) \
         .filter(lambda text: len(text) > 0) \
@@ -83,6 +85,7 @@ def run():
         .map(lambda p: Word(p[0], p[1])) \
         .foreachRDD(lambda rdd: rdd.toDF().registerTempTable("words"))
 
+    # processing to obtain data about hashtags in text and their count.
     hashtags.window(40) \
         .map(lambda word: ''.join(char for char in word if char not in list_punct)) \
         .map(lambda word: (word.lower(), 1)) \
@@ -94,7 +97,7 @@ def run():
     ssc.start()
     print("Session Started.....")
     print("Collecting tweets...waiting for " + str(time_to_wait) + " seconds..")
-    time.sleep(time_to_wait)
+    time.sleep(time_to_wait) # waiting in to ensure that some data are yet collected.
     print("Tweets Collected....")
 
     all_hashtags_df = None
@@ -106,7 +109,7 @@ def run():
     while count <= count_max:
         print('Count: ' + str(count) + "/" + str(count_max))
         print("Waiting for 30 Seconds.....")
-        time.sleep(40)  # This loop will run every 30 seconds. The time interval can be increased as per your wish
+        time.sleep(40)
 
         words = sqlContext.sql('Select word, count from words')
         words_df = words.toPandas()
@@ -135,14 +138,13 @@ def run():
 
     ssc.stop()
 
+    # Saving all dataframes as csv.
     if all_hashtags_df is not None:
         all_hashtags_df.to_csv('hashtags.csv')
     if all_words_df is not None:
         all_words_df.to_csv('words.csv')
     if all_tweets_df is not None:
         all_tweets_df.to_csv('tweets.csv')
-
-
 
 
 if __name__ == '__main__':
