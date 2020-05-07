@@ -18,7 +18,6 @@ from pyspark.sql import SQLContext
 import pandas as pd
 
 
-
 def clean_tweet(tweet):
     # source: https://github.com/nilabja9/pyspark-twitter
     return ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ", str(tweet)).split())
@@ -97,7 +96,7 @@ def run():
     ssc.start()
     print("Session Started.....")
     print("Collecting tweets...waiting for " + str(time_to_wait) + " seconds..")
-    time.sleep(time_to_wait) # waiting in to ensure that some data are yet collected.
+    time.sleep(time_to_wait)  # waiting in to ensure that some data are yet collected.
     print("Tweets Collected....")
 
     all_hashtags_df = None
