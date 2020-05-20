@@ -8,10 +8,10 @@ import json
 # Source:
 # https://towardsdatascience.com/hands-on-big-data-streaming-apache-spark-at-scale-fd89c15fa6b0
 
-consumer_key = '1fXns9Prf7qpuqbkeUuRGmlC7'
-consumer_secret = 'ececQufGe9HXWBnHy9IKoxeYtp4xajBFVzD416k9McKap8f3jU'
-access_token = '1201821878689705984-Nu0WJCG6QZH5ovHKXIfph4VjKyfMXi'
-access_token_secret = 'odHtc2JZaJn2jpWqma39klDkAXCd6kRHLRjNQS84H8MPi'
+consumer_key = ''
+consumer_secret = ''
+access_token = ''
+access_token_secret = ''
 
 
 class TweetsListener(StreamListener):
